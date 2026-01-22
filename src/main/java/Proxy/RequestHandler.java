@@ -57,6 +57,7 @@ public class RequestHandler extends Thread {
 			 * (4) Otherwise, call method proxyServertoClient to process the GET request
 			 *
 		*/
+                System.out.print("Made it to thread.");
 
 	}
 

@@ -26,11 +26,11 @@ public class ProxyServer {
 	String logFileName = "log.txt";
 
 	public static void main(String[] args) {
-		new ProxyServer().startServer(Integer.parseInt(args[0]));
+//            new ProxyServer().startServer(Integer.parseInt(args[0]));
+            new ProxyServer().startServer(2000);
 	}
 
 	void startServer(int proxyPort) {
-
 		cache = new ConcurrentHashMap<>();
 
 		// create the directory to store cached files. 
@@ -46,6 +46,19 @@ public class ProxyServer {
 			 * remember to catch Exceptions!
 			 *
 		*/
+                try{
+                    this.proxySocket = new ServerSocket(3000);
+                    Socket proxyClient = this.proxySocket.accept();
+                    
+                    // Create thread
+                    RequestHandler handler = new RequestHandler(proxyClient, this);
+                    handler.run();
+                }
+                catch (Exception e) {
+                    System.out.print(e);
+                }
+                
+                
  
 		
 	}

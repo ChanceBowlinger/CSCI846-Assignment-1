@@ -8,6 +8,6 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>25</maven.compiler.release>
-        <exec.mainClass>com.mycompany.csci846.assignment1.CSCI846Assignment1</exec.mainClass>
+        <exec.mainClass>com.mycompany.csci846.assignment1.CSCI846Assignment1.src.main.java.Proxy.ProxyServer</exec.mainClass>
     </properties>
 </project>

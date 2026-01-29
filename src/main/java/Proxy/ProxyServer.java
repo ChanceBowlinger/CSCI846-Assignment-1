@@ -6,6 +6,9 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
@@ -26,41 +29,46 @@ public class ProxyServer {
 	String logFileName = "log.txt";
 
 	public static void main(String[] args) {
-//            new ProxyServer().startServer(Integer.parseInt(args[0]));
-            new ProxyServer().startServer(2000);
+            new ProxyServer().startServer(Integer.parseInt(args[0]));
 	}
 
 	void startServer(int proxyPort) {
-		cache = new ConcurrentHashMap<>();
+            System.out.println("Made it to start");
+            cache = new ConcurrentHashMap<>();
 
-		// create the directory to store cached files. 
-		File cacheDir = new File("cached");
-		if (!cacheDir.exists() || (cacheDir.exists() && !cacheDir.isDirectory())) {
-			cacheDir.mkdirs();
-		}
+            // create the directory to store cached files. 
+            File cacheDir = new File("cached");
+            if (!cacheDir.exists() || (cacheDir.exists() && !cacheDir.isDirectory())) {
+                    cacheDir.mkdirs();
+            }
 
-		/**
-			 * To do:
-			 * create a serverSocket to listen on the port (proxyPort)
-			 * Create a thread (RequestHandler) for each new client connection 
-			 * remember to catch Exceptions!
-			 *
-		*/
-                try{
-                    this.proxySocket = new ServerSocket(3000);
+            /**
+                     * To do:
+                     * create a serverSocket to listen on the port (proxyPort)
+                     * Create a thread (RequestHandler) for each new client connection 
+                     * remember to catch Exceptions!
+                     *
+            */
+            try{
+                this.proxySocket = new ServerSocket();
+                InetAddress localAddress = InetAddress.getByName("localhost");
+                SocketAddress endpoint = new InetSocketAddress(localAddress, proxyPort);
+                this.proxySocket.bind(endpoint);
+                
+                System.out.println("Listening on " + this.proxySocket.getLocalSocketAddress());
+
+                while (true){
                     Socket proxyClient = this.proxySocket.accept();
-                    
-                    // Create thread
-                    RequestHandler handler = new RequestHandler(proxyClient, this);
-                    handler.run();
+                    System.out.println("Accepted from " + proxyClient.getRemoteSocketAddress());
+                    new Thread(new RequestHandler(proxyClient, this)).start();
                 }
-                catch (Exception e) {
-                    System.out.print(e);
-                }
-                
-                
- 
-		
+                // Create thread
+//                RequestHandler handler = new RequestHandler(proxyClient, this);
+//                handler.run();
+            }
+            catch (Exception e) {
+                System.out.println(e);
+            }
 	}
 
 

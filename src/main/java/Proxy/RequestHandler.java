@@ -6,6 +6,9 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.IOException;
 
 
 // RequestHandler is thread that process requests of one client connection
@@ -25,7 +28,7 @@ public class RequestHandler extends Thread {
 
 
 	public RequestHandler(Socket clientSocket, ProxyServer proxyServer) {
-
+            System.out.println("In Request Handler");
 		
 		this.clientSocket = clientSocket;
 		
@@ -36,6 +39,17 @@ public class RequestHandler extends Thread {
 			clientSocket.setSoTimeout(2000);
 			inFromClient = clientSocket.getInputStream();
 			outToClient = clientSocket.getOutputStream();
+                        
+                        try (
+                            BufferedReader in = new BufferedReader(new InputStreamReader(inFromClient, "UTF-8"))
+                        ) {
+                            String line;
+                            while ((line = in.readLine()) != null) {
+                                System.out.println("Received: " + line);
+                            }
+                        } catch (Exception e1){
+                            e1.printStackTrace();
+                        }
 
 		} catch (Exception e) {
 			e.printStackTrace();

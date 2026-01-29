@@ -59,12 +59,9 @@ public class ProxyServer {
 
                 while (true){
                     Socket proxyClient = this.proxySocket.accept();
-                    System.out.println("Accepted from " + proxyClient.getRemoteSocketAddress());
+//                    System.out.println("Accepted from " + proxyClient.getRemoteSocketAddress());
                     new Thread(new RequestHandler(proxyClient, this)).start();
                 }
-                // Create thread
-//                RequestHandler handler = new RequestHandler(proxyClient, this);
-//                handler.run();
             }
             catch (Exception e) {
                 System.out.println(e);

@@ -27,9 +27,7 @@ public class RequestHandler extends Thread {
 	private ProxyServer server;
 
 
-	public RequestHandler(Socket clientSocket, ProxyServer proxyServer) {
-            System.out.println("In Request Handler");
-		
+	public RequestHandler(Socket clientSocket, ProxyServer proxyServer) {		
 		this.clientSocket = clientSocket;
 		
 
@@ -39,17 +37,6 @@ public class RequestHandler extends Thread {
 			clientSocket.setSoTimeout(2000);
 			inFromClient = clientSocket.getInputStream();
 			outToClient = clientSocket.getOutputStream();
-                        
-                        try (
-                            BufferedReader in = new BufferedReader(new InputStreamReader(inFromClient, "UTF-8"))
-                        ) {
-                            String line;
-                            while ((line = in.readLine()) != null) {
-                                System.out.println("Received: " + line);
-                            }
-                        } catch (Exception e1){
-                            e1.printStackTrace();
-                        }
 
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -62,18 +49,31 @@ public class RequestHandler extends Thread {
 	
 	public void run() {
 
-		/**
-			 * To do
-			 * Process the requests from a client. In particular, 
-			 * (1) Check the request type, only process GET request and ignore others
-                         * (2) Write log.
-			 * (3) If the url of GET request has been cached, respond with cached content
-			 * (4) Otherwise, call method proxyServertoClient to process the GET request
-			 *
-		*/
-                System.out.print("Made it to thread.");
+            /**
+                     * To do
+                     * Process the requests from a client. In particular, 
+                     * (1) Check the request type, only process GET request and ignore others
+                     * (2) Write log.
+                     * (3) If the url of GET request has been cached, respond with cached content
+                     * (4) Otherwise, call method proxyServertoClient to process the GET request
+                     *
+            */
+            try (
+                BufferedReader in = new BufferedReader(new InputStreamReader(inFromClient, "UTF-8"))
+            ) {
+                String firstLine = in.readLine();
+                if(firstLine.substring(0, 3).equals("GET")){
+                    System.out.println(firstLine);
+                    // forwarding
+                } else {
+//                    System.out.println("Non GET request: skipping");
+                }
 
-	}
+
+            } catch (Exception e1){
+                e1.printStackTrace();
+            }
+        }
 
 	
 	private void proxyServertoClient(byte[] clientRequest) {

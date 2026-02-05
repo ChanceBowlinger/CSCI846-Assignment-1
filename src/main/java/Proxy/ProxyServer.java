@@ -33,7 +33,6 @@ public class ProxyServer {
 	}
 
 	void startServer(int proxyPort) {
-            System.out.println("Made it to start");
             cache = new ConcurrentHashMap<>();
 
             // create the directory to store cached files. 
@@ -42,13 +41,6 @@ public class ProxyServer {
                     cacheDir.mkdirs();
             }
 
-            /**
-                     * To do:
-                     * create a serverSocket to listen on the port (proxyPort)
-                     * Create a thread (RequestHandler) for each new client connection 
-                     * remember to catch Exceptions!
-                     *
-            */
             try{
                 this.proxySocket = new ServerSocket();
                 InetAddress localAddress = InetAddress.getByName("localhost");
@@ -59,7 +51,6 @@ public class ProxyServer {
 
                 while (true){
                     Socket proxyClient = this.proxySocket.accept();
-//                    System.out.println("Accepted from " + proxyClient.getRemoteSocketAddress());
                     new Thread(new RequestHandler(proxyClient, this)).start();
                 }
             }
@@ -79,13 +70,18 @@ public class ProxyServer {
 	}
 
 	public synchronized void writeLog(String info) {
-		
-			/**
-			 * To do
-			 * write string (info) to the log file, and add the current time stamp 
-			 * e.g. String timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
-			 *
-			*/
+            String timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
+            String browserIP = info.substring(info.indexOf(";") + 2); // Grab everything after ";" delimiter and first "/" character
+            String browserURL = info.substring(info.indexOf("http:"), info.indexOf("HTTP") - 1); // may change if HTTP is stripped later
+            String logString = timeStamp + "  " + browserIP  + "  " + browserURL;
+            
+            // Log in append mode
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(logFileName, true))) {
+                writer.write(logString);
+                writer.newLine();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
 	}
 
 }

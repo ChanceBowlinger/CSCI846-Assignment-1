@@ -3,6 +3,7 @@ package Proxy;
 import java.io.*;
 import java.net.*;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
@@ -31,7 +32,7 @@ public class RequestHandler extends Thread {
 		this.clientSocket = clientSocket;
 		
 
-		this.server = proxyServer;
+		server = proxyServer;
 
 		try {
 			clientSocket.setSoTimeout(2000);
@@ -63,8 +64,24 @@ public class RequestHandler extends Thread {
             ) {
                 String firstLine = in.readLine();
                 if(firstLine.substring(0, 3).equals("GET")){
-                    System.out.println(firstLine);
-                    // forwarding
+                    // Log here 
+                    server.writeLog(firstLine + ";" + clientSocket.getRemoteSocketAddress()); // take firstLine + ip address with ";" as delimiter
+                    
+                    // Get URL being fetched
+                    String URL = firstLine.substring(firstLine.indexOf("http:"), firstLine.indexOf("HTTP") - 1);
+                    
+                    // Check if URL is already cached
+                    server.cache.containsKey(URL);
+                    if (server.cache.containsKey(URL)){ // TODO - check works as intended
+                        // URL is cached - return cached information
+                        sendCachedInfoToClient(server.getCache(URL));
+                    } else {
+                        //proxyServertoClient(clientRequest);
+                    }
+                    
+                    
+                    
+                    
                 } else {
 //                    System.out.println("Non GET request: skipping");
                 }
@@ -98,6 +115,7 @@ public class RequestHandler extends Thread {
 		 * (4) Write the web server's response to a cache file, put the request URL and cache file name to the cache Map
 		 * (5) close file, and sockets.
 		*/
+              
 		
 	}
 	

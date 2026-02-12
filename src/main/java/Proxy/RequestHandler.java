@@ -8,6 +8,8 @@ import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.io.BufferedWriter;
+import java.io.OutputStreamWriter;
 import java.io.IOException;
 
 
@@ -48,7 +50,7 @@ public class RequestHandler extends Thread {
 	@Override
 	
 	public void run() {
-
+            
             /**
                      * To do
                      * Process the requests from a client. In particular, 
@@ -62,13 +64,23 @@ public class RequestHandler extends Thread {
                 BufferedReader in = new BufferedReader(new InputStreamReader(inFromClient, "UTF-8"))
             ) {
                 String firstLine = in.readLine();
-                if(firstLine.substring(0, 3).equals("GET")){
-                    System.out.println(firstLine);
-                    // forwarding
-                } else {
-//                    System.out.println("Non GET request: skipping");
-                }
+                if (firstLine == null) return;
+                
+                if (firstLine.startsWith("GET")) {
+                    StringBuilder requestBuilder = new StringBuilder();
+                    requestBuilder.append(firstLine).append("\r\n");
 
+                    // Reading all the headers
+                    String line;
+                    while ((line = in.readLine()) != null && !line.isEmpty()) {
+                        requestBuilder.append(line).append("\r\n");
+                    }
+
+                    // End of the headers
+                    requestBuilder.append("\r\n");
+
+                    this.proxyServertoClient(requestBuilder.toString());
+                }
 
             } catch (Exception e1){
                 e1.printStackTrace();
@@ -76,10 +88,10 @@ public class RequestHandler extends Thread {
         }
 
 	
-	private void proxyServertoClient(byte[] clientRequest) {
+	private void proxyServertoClient(String clientRequest) {
 
 		FileOutputStream fileWriter = null;
-		Socket toWebServerSocket = null;
+//		Socket toWebServerSocket = null;
 		InputStream inFromServer;
 		OutputStream outToServer;
 		
@@ -98,7 +110,64 @@ public class RequestHandler extends Thread {
 		 * (4) Write the web server's response to a cache file, put the request URL and cache file name to the cache Map
 		 * (5) close file, and sockets.
 		*/
-		
+                
+		try {
+                    BufferedReader reader = new BufferedReader(new StringReader(clientRequest));
+
+                    // Parse first line
+                    String firstLine = reader.readLine();
+                    String[] parts = firstLine.split(" ");
+
+                    String method = parts[0];
+                    String fullURL = parts[1];
+                    String version = parts[2];
+
+                    URL url = new URL(fullURL);
+
+                    String host = url.getHost();
+                    int port = (url.getPort() == -1) ? 80 : url.getPort();
+                    String path = url.getFile();
+
+                    Socket toWebServerSocket = new Socket(host, port);
+
+                    outToServer = toWebServerSocket.getOutputStream();
+                    inFromServer = toWebServerSocket.getInputStream();
+
+                    PrintWriter serverWriter =
+                            new PrintWriter(new BufferedWriter(
+                                    new OutputStreamWriter(outToServer)), true);
+
+                    // Send modified first line (relative path!)
+                    serverWriter.println(method + " " + path + " " + version);
+
+                    // Forward headers except Proxy-Connection
+                    String headerLine;
+                    while ((headerLine = reader.readLine()) != null && !headerLine.isEmpty()) {
+
+                        if (!headerLine.toLowerCase().startsWith("proxy-connection")) {
+                            serverWriter.println(headerLine);
+                        }
+                    }
+
+                    serverWriter.println(); // end headers
+                    serverWriter.flush();
+
+                    // Forward server response back to client (RAW BYTES)
+                    byte[] buffer = new byte[4096];
+                    int bytesRead;
+
+                    while ((bytesRead = inFromServer.read(buffer)) != -1) {
+                        outToClient.write(buffer, 0, bytesRead);
+                    }
+
+                    outToClient.flush();
+
+                    toWebServerSocket.close();
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
 	}
 	
 	

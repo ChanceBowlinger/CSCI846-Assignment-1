@@ -1,0 +1,22 @@
+http://httpbin.org
+
+Why use it: The gold standard for testing HTTP clients and proxies. It covers almost every edge case.
+Key URLs to test:
+http://httpbin.org/ip: Returns the origin IP (useful to check if your proxy is working or if it's "transparent").
+http://httpbin.org/headers: Returns all HTTP headers received by the server. Check this to see if your proxy adds Via or X-Forwarded-For headers.
+http://httpbin.org/user-agent: Returns just the user agent.
+http://http.badssl.com
+
+Why use it: This is a subdomain of badssl.com specifically configured not to use security. It is guaranteed to remain on port 80 without upgrading to HTTPS.
+http://neverssl.com
+
+Why use it: This site is famously used to trigger "Captive Portals" (like reliable Wi-Fi login pages at airports). It is designed to never use SSL/TLS, ensuring your browser/proxy doesn't get stuck in a redirect loop.
+http://example.com
+
+Why use it: Managed by IANA, this domain is reserved for documentation. It is extremely lightweight, static, and unlikely to change, making it perfect for "Hello World" proxy connectivity tests.
+http://info.cern.ch
+
+Why use it: The home of the very first website. It is historically preserved and served over plain HTTP. It is text-heavy and simple.
+http://books.toscrape.com
+
+Why use it: A fictional bookstore designed for web scraping practice. It usually allows plain HTTP traffic and is good for testing how your proxy handles larger HTML bodies and images.

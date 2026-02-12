@@ -35,7 +35,7 @@ public class RequestHandler extends Thread {
 		server = proxyServer;
 
 		try {
-			clientSocket.setSoTimeout(2000);
+			// clientSocket.setSoTimeout(2000);
 			inFromClient = clientSocket.getInputStream();
 			outToClient = clientSocket.getOutputStream();
 
@@ -59,9 +59,9 @@ public class RequestHandler extends Thread {
                      * (4) Otherwise, call method proxyServertoClient to process the GET request
                      *
             */
-            try (
-                BufferedReader in = new BufferedReader(new InputStreamReader(inFromClient, "UTF-8"))
-            ) {
+            try {
+                BufferedReader in = new BufferedReader(new InputStreamReader(inFromClient, "UTF-8"));
+                
                 String firstLine = in.readLine();
                 if (firstLine == null) return;
                 
@@ -73,12 +73,10 @@ public class RequestHandler extends Thread {
                     String URL = firstLine.substring(firstLine.indexOf("http:"), firstLine.indexOf("HTTP") - 1);
                     
                     // Check if URL is already cached
-                    server.cache.containsKey(URL);
                     if (server.cache.containsKey(URL)){ // TODO - check works as intended
                         // URL is cached - return cached information
                         sendCachedInfoToClient(server.getCache(URL));
                     } else {
-                        //proxyServertoClient(clientRequest);
                         StringBuilder requestBuilder = new StringBuilder();
                         requestBuilder.append(firstLine).append("\r\n");
 
@@ -91,7 +89,7 @@ public class RequestHandler extends Thread {
                         // End of the headers
                         requestBuilder.append("\r\n");
 
-                        proxyServertoClient(requestBuilder.toString().getBytes());
+                        proxyServertoClient(requestBuilder.toString());
                     }
                     
                     
@@ -108,85 +106,93 @@ public class RequestHandler extends Thread {
         }
 
 	
-	private void proxyServertoClient(byte[] clientRequest) {
+	private void proxyServertoClient(String clientRequest) {
 
-		FileOutputStream fileWriter = null;
-		Socket toWebServerSocket = null;
-		InputStream inFromServer;
-		OutputStream outToServer;
-		
-		// Create Buffered output stream to write to cached copy of file
-		String fileName = "cached/" + generateRandomFileName() + ".dat";
-		
-		// to handle binary content, byte is used
-		byte[] serverReply = new byte[4096];
-		
-			
-		/**
-		 * To do
-		 * (1) Create a socket to connect to the web server (default port 80)
-		 * (2) Send client's request (clientRequest) to the web server, you may want to use flush() after writing.
-		 * (3) Use a while loop to read all responses from web server and send back to client
-		 * (4) Write the web server's response to a cache file, put the request URL and cache file name to the cache Map
-		 * (5) close file, and sockets.
-		*/
-                
-                try {
-                    BufferedReader reader = new BufferedReader(new StringReader(clientRequest));
+            InputStream inFromServer;
+            OutputStream outToServer;
 
-                    // Parse first line
-                    String firstLine = reader.readLine();
-                    String[] parts = firstLine.split(" ");
+            // Create Buffered output stream to write to cached copy of file
+            String fileName = "cached/" + generateRandomFileName() + ".dat";
 
-                    String method = parts[0];
-                    String fullURL = parts[1];
-                    String version = parts[2];
 
-                    URL url = new URL(fullURL);
+            /**
+             * To do
+             * (1) Create a socket to connect to the web server (default port 80)
+             * (2) Send client's request (clientRequest) to the web server, you may want to use flush() after writing.
+             * (3) Use a while loop to read all responses from web server and send back to client
+             * (4) Write the web server's response to a cache file, put the request URL and cache file name to the cache Map
+             * (5) close file, and sockets.
+            */
 
-                    String host = url.getHost();
-                    int port = (url.getPort() == -1) ? 80 : url.getPort();
-                    String path = url.getFile();
+            try {
+                BufferedReader reader = new BufferedReader(new StringReader(clientRequest.toString()));
 
-                    Socket toWebServerSocket = new Socket(host, port);
+                // Parse first line
+                String firstLine = reader.readLine();
+                String[] parts = firstLine.split(" ");
 
-                    outToServer = toWebServerSocket.getOutputStream();
-                    inFromServer = toWebServerSocket.getInputStream();
+                String method = parts[0];
+                String fullURL = parts[1];
+                String version = parts[2];
 
-                    PrintWriter serverWriter =
-                            new PrintWriter(new BufferedWriter(
-                                    new OutputStreamWriter(outToServer)), true);
+                URL url = new URL(fullURL);
 
-                    // Send modified first line (relative path!)
-                    serverWriter.println(method + " " + path + " " + version);
+                String host = url.getHost();
+                int port = (url.getPort() == -1) ? 80 : url.getPort();
+                String path = url.getFile();
 
-                    // Forward headers except Proxy-Connection
-                    String headerLine;
-                    while ((headerLine = reader.readLine()) != null && !headerLine.isEmpty()) {
+                Socket toWebServerSocket = new Socket(host, port);
 
-                        if (!headerLine.toLowerCase().startsWith("proxy-connection")) {
-                            serverWriter.println(headerLine);
-                        }
+                outToServer = toWebServerSocket.getOutputStream();
+                inFromServer = toWebServerSocket.getInputStream();
+
+                PrintWriter serverWriter =
+                        new PrintWriter(new BufferedWriter(
+                                new OutputStreamWriter(outToServer)), true);
+
+                // Send modified first line (relative path!)
+                serverWriter.println(method + " " + path + " " + version);
+
+                // Forward headers except Proxy-Connection
+                String headerLine;
+                while ((headerLine = reader.readLine()) != null && !headerLine.isEmpty()) {
+
+                    if (!headerLine.toLowerCase().startsWith("proxy-connection")) {
+                        serverWriter.println(headerLine);
                     }
+                }
+                serverWriter.println("Connection: close"); // explictly close connection
+                serverWriter.println();
+                serverWriter.flush();
 
-                    serverWriter.println(); // end headers
-                    serverWriter.flush();
+                toWebServerSocket.setSoTimeout(5000);
 
-                    // Forward server response back to client (RAW BYTES)
+                try (FileOutputStream fileWriter = new FileOutputStream(fileName)) {
                     byte[] buffer = new byte[4096];
                     int bytesRead;
 
                     while ((bytesRead = inFromServer.read(buffer)) != -1) {
+                        // 1. Send to client
                         outToClient.write(buffer, 0, bytesRead);
+                        // 2. Save to cache file
+                        fileWriter.write(buffer, 0, bytesRead);
                     }
 
+                    fileWriter.flush();
                     outToClient.flush();
 
-                    toWebServerSocket.close();
+                    // Update the cache map ater the file is fully written
+                    server.putCache(fullURL, fileName);
 
-                } catch (Exception e) {
+                } catch (IOException e) {
                     e.printStackTrace();
+                } finally {
+                    toWebServerSocket.close();
                 }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
 
         }
 	

@@ -61,12 +61,12 @@ public class ProxyServer {
 
 
 
-	public String getCache(String hashcode) {
-		return cache.get(hashcode);
+	public String getCache(String url) {
+		return cache.get(url);
 	}
 
-	public void putCache(String hashcode, String fileName) {
-		cache.put(hashcode, fileName);
+	public void putCache(String url, String fileName) {
+		cache.put(url, fileName);
 	}
 
 	public synchronized void writeLog(String info) {
